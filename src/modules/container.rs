@@ -33,6 +33,19 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
 
             let image_res = read_file(container_env_path)
                 .map(|s| {
+                    if context_path(context, "/run/.toolboxenv").exists() {
+                        // Toolbox always uses the same image for its containers.
+                        let toolbox_name = s.lines().find_map(|l| {
+                            l.starts_with("name=\"").then(|| {
+                                let r = l.split_at(6).1;
+                                String::from(r.trim_end_matches('"'))
+                            })
+                        });
+                        if toolbox_name.is_some() {
+                            return format!("toolbox:{}", toolbox_name.unwrap());
+                        }
+                    }
+
                     s.lines()
                         .find_map(|l| {
                             l.starts_with("image=\"").then(|| {
